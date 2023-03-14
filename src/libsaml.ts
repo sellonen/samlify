@@ -568,10 +568,21 @@ const libSaml = () => {
       signature: string | Buffer,
       verifyAlgorithm?: string
     ) {
-      const signCert = metadata.getX509Certificate(certUse.signing);
-      const signingScheme = getSigningScheme(verifyAlgorithm);
-      const key = new nrsa(utility.getPublicKeyPemFromCertificate(signCert), 'public', { signingScheme });
-      return key.verify(Buffer.from(octetString), Buffer.from(signature));
+      let signCert = metadata.getX509Certificate(certUse.signing);
+      if (!Array.isArray(signCert)) {
+        signCert = [signCert];
+        
+      }
+      let verificationSuccessful = false;
+      for (const _cert of signCert) {
+        const signingScheme = getSigningScheme(verifyAlgorithm);
+        const key = new nrsa(utility.getPublicKeyPemFromCertificate(_cert), 'public', { signingScheme });
+        verificationSuccessful = key.verify(Buffer.from(octetString), Buffer.from(signature));
+        if (verificationSuccessful) {
+            return verificationSuccessful;
+        }
+      }   
+      return verificationSuccessful
     },
     /**
     * @desc Get the public key in string format
